@@ -1,1 +1,0 @@
-export type AnyMap = { [key: string]: any };

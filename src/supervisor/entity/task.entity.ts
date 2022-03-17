@@ -1,10 +1,15 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { TaskTypeEntity } from './task-type.entity';
+import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import TaskTypeEntity from './task-type.entity';
+import OngoingTaskEntity from './ongoing-task.entity';
 
 @Entity('task')
-export class TaskEntity {
+export default class TaskEntity {
   @PrimaryGeneratedColumn()
+  @OneToMany(() => OngoingTaskEntity, ongoingTask => ongoingTask.taskId)
   id: number;
+
+  @Column()
+  userId: number;
 
   @Column()
   status: number;
@@ -14,6 +19,9 @@ export class TaskEntity {
 
   @Column()
   startTime: Date;
+
+  @Column()
+  lastResumeTime: Date;
 
   @Column()
   endTime: Date;

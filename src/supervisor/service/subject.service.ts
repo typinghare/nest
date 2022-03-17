@@ -1,13 +1,26 @@
 import { getConnection, InsertResult } from 'typeorm';
-import { SubjectEntity } from '../entity/subject.entity';
+import SubjectEntity from '../entity/subject.entity';
+import SubjectVo from '../vo/subject.vo';
+import SubjectDto from '../dto/subject.dto';
+import UserService from './user.service';
+import { Injectable } from '@nestjs/common';
 
-export class SubjectService {
-  async createSubject(subjectEntity: Partial<SubjectEntity>): Promise<InsertResult> {
+@Injectable()
+export default class SubjectService {
+  constructor(private userService: UserService) {
+  }
+
+  /**
+   * Create a subject.
+   * @param subjectDto
+   */
+  async createSubject(subjectDto: SubjectDto): Promise<InsertResult> {
+    const userId = await this.userService.getUserId();
     return await getConnection('supervisor')
       .createQueryBuilder()
       .insert()
       .into(SubjectEntity)
-      .values(subjectEntity)
+      .values({ userId, ...subjectDto })
       .execute();
   }
 
@@ -20,15 +33,18 @@ export class SubjectService {
     return entity && entity.id;
   }
 
-  async findAll(): Promise<string[]> {
-    const subjectList = await getConnection('supervisor')
+  /**
+   * Query all subjects of a specified user.
+   */
+  async findAll(): Promise<SubjectVo[]> {
+    const userId = await this.userService.getUserId();
+
+    return await getConnection('supervisor')
       .getRepository(SubjectEntity)
       .createQueryBuilder('subject')
-      .orderBy({
-        'subject.priority': 'DESC',
-        'subject.id': 'DESC',
-      })
+      .select(['subject.id', 'subject.name'])
+      .where('user_id = :userId', { userId })
+      .orderBy({ 'subject.priority': 'DESC' })
       .getMany();
-    return subjectList.map(subject => subject.name);
   }
 }

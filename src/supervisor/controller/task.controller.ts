@@ -1,38 +1,45 @@
-import { Body, Controller, Get, Post, Put, Query } from '@nestjs/common';
-import { TaskService } from '../service/task.service';
-import { TaskDto } from '../dto/task.dto';
-import * as moment from 'moment';
+import { Body, Controller, HttpCode, HttpException, HttpStatus, Post, Put } from '@nestjs/common';
+import TaskService from '../service/task.service';
+import TaskDto from '../dto/task.dto';
+import { ApiBadRequestResponse, ApiBody, ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
+import BaseController, { ResponsePack } from './base.controller';
+import TaskVo from '../vo/task.vo';
+import { TaskAction } from '../common/enum';
 
+@ApiTags('supervisor')
 @Controller('supervisor/tasks')
-export class TaskController {
+export default class TaskController extends BaseController {
   constructor(private taskService: TaskService) {
-  }
-
-  @Get('/')
-  async findAll(@Query('date') date: string | undefined) {
-    const _date = date ? moment(date).toDate() : new Date();
-    return await this.taskService.findAll(_date);
+    super();
   }
 
   @Post('/')
-  async createTask(@Body() taskDto: TaskDto): Promise<string> {
-    await this.taskService.createTask({ ...taskDto, createTime: new Date() });
-    return 'Created a task successfully.';
+  @HttpCode(HttpStatus.CREATED)
+  @ApiCreatedResponse({
+    description: 'The task has been successfully created.',
+    type: TaskVo,
+  })
+  @ApiBadRequestResponse({
+    description: 'Fail to create the task.',
+  })
+  @ApiBody({ type: TaskDto })
+  async createTask(@Body() taskDto: TaskDto): Promise<ResponsePack<TaskVo>> {
+    try {
+      return this.message('The task has been successfully created.')
+        .data(await this.taskService.createTask(taskDto));
+    } catch (error) {
+      throw new HttpException('Fail to create the task.', HttpStatus.BAD_REQUEST);
+    }
   }
 
-  @Put('/start')
-  async startTask(@Body('taskId') taskId: number): Promise<string> {
-    await this.taskService.startTask(taskId);
-    return 'Object task starts.';
-  }
-
-  @Put('/pause')
-  async pauseTask(): Promise<string> {
-    return 'Object task pauses.';
-  }
-
-  @Put('/end')
-  async end(): Promise<string> {
-    return 'Object task ends.';
+  @Put('/')
+  @HttpCode(HttpStatus.OK)
+  @ApiCreatedResponse({
+    description: 'Update the status of the ongoing task.',
+    type: TaskVo,
+  })
+  async updateOngoingTaskStatus(@Body('action') action: TaskAction): Promise<any> {
+    return this.message('Status of the task has been updated successfully.')
+      .data(await this.taskService.updateOngoingTaskStatus(action));
   }
 }

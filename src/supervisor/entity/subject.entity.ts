@@ -1,11 +1,14 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { TaskTypeEntity } from './task-type.entity';
+import TaskTypeEntity from './task-type.entity';
 
 @Entity('subject')
-export class SubjectEntity {
+export default class SubjectEntity {
   @PrimaryGeneratedColumn()
   @OneToMany(() => TaskTypeEntity, taskType => taskType.subjectId)
   id: number;
+
+  @Column()
+  userId: number;
 
   @Column()
   name: string;

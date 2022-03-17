@@ -14,6 +14,7 @@ function database(name: string): ConnectionOptions {
     database: name,
     entities: [path.join(__dirname, name, '/entity/*.js')],
     namingStrategy: new SnakeNamingStrategy(),
+    logging: true,
   };
 }
 
