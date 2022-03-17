@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { getConnection } from 'typeorm';
 import TaskEntity from '../entity/task.entity';
-import { getDay, getIdFromInsertResult } from '../util/database';
+import { getDay, getIdFromInsertResult, getMinuteDifference } from '../util/database';
 import TaskDto from '../dto/task.dto';
 import { TaskStatus } from '../common/status';
 import { convertToVo, convertToVoArray } from '../util/conversion';
@@ -50,7 +50,13 @@ export default class TaskService {
       .orderBy('task.create_time', 'DESC')
       .getMany();
 
-    return convertToVoArray<TaskVo>(taskList, taskPrescription);
+    const taskVoArray = convertToVoArray<TaskVo>(taskList, taskPrescription);
+    taskVoArray.map(task => {
+      if (task.startTime && task.status === TaskStatus.ONGOING)
+        task.duration += getMinuteDifference(new Date(), task.lastResumeTime);
+    });
+
+    return taskVoArray;
   }
 
   /**
@@ -90,7 +96,7 @@ export default class TaskService {
     await getConnection('supervisor')
       .createQueryBuilder()
       .update(OngoingTaskEntity)
-      .where('user_id = :userId', {userId})
+      .where('user_id = :userId', { userId })
       .set({ taskId })
       .execute();
   }
